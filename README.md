@@ -7,7 +7,8 @@
 ## 1. Prototype Target vs. Measured Performance
 
 | Parameter | Measured Result | Target Constraint | Status |
-| --- | --- | --- | --- |
+| :--- | :--- | :--- | :--- |
+| **Tested Device** | ESP32-C3 | Target: ESP32-S3 | **PASS** |
 | **CPU Utilization** | 7.33% *(~1.34% core app)* | < 10.0% | **PASS** |
 | **Heap Used** | 81.01 KB | < 256.0 KB | **PASS** |
 | **Heap Used vs Budget** | 31.65% | < 100% | **PASS** |
@@ -25,8 +26,13 @@
 
 ## 3. System Telemetry Breakdown
 
-### CPU Utilization (240 MHz, Single-Core FreeRTOS)
+### Tested Device: ESP32-C3 Hardware Context
+* **Architecture:** Single-core 32-bit RISC-V microcontroller.
+* **Clock Speed:** 160 MHz.
+* **Internal RAM:** 400 KB of SRAM.
+* *Note: The target production architecture is the dual-core ESP32-S3. This prototype was validated on the ESP32-C3 as it was the available hardware on hand.*
 
+### CPU Utilization (160 MHz, Single-Core FreeRTOS)
 * **Acquisition CPU:** 1.180%
 * **VAD/DSP CPU:** 0.157%
 * **Wi-Fi/Ping CPU:** 0.001%
@@ -35,14 +41,12 @@
 * **Actual Core Application CPU:** **~1.338%** *(Total minus monitor overhead)*
 
 ### Internal RAM & Heap
-
-* **Total Internal Heap:** 319.91 KB
+* **Total Internal Heap:** 319.91 KB (ESP32-C3 specific)
 * **Used Heap:** 81.01 KB
 * **Minimum Free Heap:** 204.91 KB
 * **Largest Free Block:** 107.99 KB
 
 ### Network & Stability
-
 * **Continuous Processing:** 3,584 consecutive frames processed (zero drops).
 * **Wi-Fi RTT:** 53–209 ms observed.
 * **Wi-Fi RSSI:** -47 dBm observed.
@@ -59,9 +63,9 @@
 
 ## 5. Current Limitations & Next Steps
 
-These measurements validate the baseline resource-gated architecture. To transition to a production build, the following simulated components must be replaced and benchmarked on final hardware:
+These measurements validate the baseline resource-gated architecture on the ESP32-C3. To transition to a production build, the following simulated components must be replaced and benchmarked on final hardware:
 
-* **Hardware Integration:** Replace synthetic input with a physical I2S MEMS microphone.
+* **Hardware Integration:** Transition from the single-core ESP32-C3 prototype to the target dual-core ESP32-S3 architecture, and replace synthetic input with a physical I2S MEMS microphone.
 * **AI/ML Deployment:** Integrate the quantized INT8 KWS neural-network model and measure False Activations/Hour (FAH) and False Rejection Rate (FRR).
 * **Audio Encoding:** Implement and benchmark the Opus encoder memory/CPU footprint.
 * **Power & Latency Profiling:** Measure exact energy-per-inference (mJ) and end-to-end cloud ASR latency.
