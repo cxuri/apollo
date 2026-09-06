@@ -18,7 +18,7 @@
 
 ## 2. Speech Detection & Noise Filtering Test
 
-*Validation using ZCR + 512pt FFT + Mel Spectrogram pipeline.*
+*Validation using webrtcvad + 512pt FFT + Mel Spectrogram pipeline.*
 
 ![Speech Detection and Noise Filtering](<Speech Detection and Noise Filtering.png>)
 
