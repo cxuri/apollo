@@ -1,131 +1,117 @@
-# ESP32 Low-Power Audio Prototype: Experimental Results
+# ESP32-S3 Edge Audio & Voice-Activated Drone Interface
 
-> **Headline Result:** The prototype achieved **7.33% total measured CPU utilization**, with approximately **6% attributed to telemetry and monitoring overhead**, resulting in roughly **1.34% CPU usage for the core application**. Heap usage was approximately **81.0 KB** against a 256 KB project budget. The system also maintained a **1.5-second audio pre-roll buffer** and successfully performed **wake-triggered Wi-Fi operation**.
+An experimental embedded voice activation system built using the **ESP32-S3**, combining real-time audio processing, lightweight speech detection, and custom INT8 keyword spotting (KWS) to trigger an external drone interface.
+
+The project explores low-overhead, always-on audio processing directly on a microcontroller without requiring cloud connectivity for wake-word detection.
+
+## Demonstration
+
+[**Watch Demonstration Video**](./Demonstration.mp4)
+
+## Features
+
+- Continuous 16 kHz, 16-bit mono audio acquisition through I2S.
+- 1.5-second circular audio pre-roll buffer.
+- WebRTC Voice Activity Detection (VAD).
+- FFT, Mel Spectrogram, and Zero-Crossing Rate (ZCR) analysis.
+- Hybrid speech and environmental noise filtering.
+- Custom INT8 quantized keyword spotting model.
+- Local wake-word detection using ESP32-S3.
+- Event-driven relay activation for drone interface initialization.
+- FreeRTOS-based task management and memory optimization.
+
+## System Architecture
+
+```text
+       I2S Microphone
+             |
+             v
+      Audio Acquisition
+             |
+             v
+       Ring Buffer
+             |
+             v
+      Audio Processing
+             |
+             v
+         WebRTC VAD
+             |
+             v
+      Hybrid Noise Filter
+             |
+             v
+      Feature Extraction
+             |
+             v
+       INT8 KWS Model
+             |
+             v
+       Wake Verification
+             |
+             v
+      Relay Activation
+             |
+             v
+      Drone Interface
+```
+
+## Experimental Results
+
+| Parameter | Reported Result |
+|---|---:|
+| Hardware | ESP32-S3 Dual-Core |
+| CPU Utilization | 7.92% |
+| KWS Model Size | ~68.4 KB |
+| Runtime Memory Usage | 186.5 KB |
+| Audio Buffer | 46.88 KiB |
+| Audio Pre-roll | 1.5 seconds |
+| Acquisition Stack Headroom | >1,800 words |
+| DSP/Inference Stack Headroom | >1,200 words |
+
+*Values are preliminary measurements from the experimental implementation. CPU utilization, memory accounting, and model footprint require standardized benchmarking for independent verification.*
+
+## Detection Pipeline
+
+The hybrid detection stage combines VAD with signal-processing features to distinguish speech-like activity from environmental noise.
+
+**Speech Detection**
+
+![Speech Detection](./hybrid_speech_detected.png)
+
+**Environmental Noise Rejection**
+
+![Noise Rejection](./hybrid_noise_detected.png)
+
+## Optimization
+
+- **DSP:** Fixed-point arithmetic and ESP-DSP optimized signal-processing routines.
+- **Inference:** INT8 quantization and ESP-NN optimized kernels.
+- **Memory:** Circular buffering and reusable processing buffers.
+- **Compiler:** `-Os` optimization and Link-Time Optimization (LTO).
+- **RTOS:** Lightweight task notifications and stack usage monitoring.
+- **Memory placement:** Selective IRAM placement for time-critical routines.
+
+## Current Limitations
+
+- False activation and rejection rates under actual drone rotor noise are not yet characterized.
+- End-to-end wake-word detection latency requires further benchmarking.
+- Power consumption and energy per inference have not yet been measured.
+- Long-duration reliability testing remains ongoing.
+
+## Future Work
+
+- Benchmark false activations per hour (FAH) and false rejection rate (FRR).
+- Evaluate detection performance under real rotor noise.
+- Profile inference and activation latency.
+- Measure actual power consumption.
+- Optimize post-activation audio streaming.
+- Improve wake-word model robustness.
+
+## Technologies
+
+`ESP32-S3` `ESP-IDF` `FreeRTOS` `C/C++` `ESP-DSP` `ESP-NN` `WebRTC VAD` `TinyML` `TensorFlow Lite Micro` `I2S`
 
 ---
 
-## 1. Prototype Target vs. Measured Performance
-
-| Parameter                 | Measured Result           | Target Constraint | Status   |
-| :------------------------ | :------------------------ | :---------------- | :------- |
-| **Tested Device**         | ESP32-C3                  | Target: ESP32-S3  | **PASS** |
-| **CPU Utilization**       | 7.33% *(~1.34% core app)* | < 10.0%           | **PASS** |
-| **Heap Used**             | 81.01 KB                  | < 256.0 KB        | **PASS** |
-| **Heap Used vs. Budget**  | 31.65%                    | < 100%            | **PASS** |
-| **Audio Pre-Roll Buffer** | 46.88 KB                  | 1.5 seconds       | **PASS** |
-
----
-
-## 2. Speech Detection & Noise Filtering Test
-
-*Initial validation was performed using a WebRTC VAD + 512-point FFT + Mel Spectrogram pipeline.*
-
-![Speech Detection and Noise Filtering](<Speech Detection and Noise Filtering.png>)
-
-## 3. Hybrid Speech Detection
-
-*The second stage uses a hybrid approach combining WebRTC VAD, ZCR-based vowel characteristics, DSP audio signatures, transient rejection, and temporal verification.*
-
-![Speech Detected](hybrid_speech_detected.png)
-
-**Figure 3. Hybrid speech detection — human speech detected.**
-
-![Noise Detected](hybrid_noise_detected.png)
-
-**Figure 4. Hybrid speech detection — environmental noise rejected.**
-
----
-
-## 4. System Telemetry Breakdown
-
-### Tested Device: ESP32-C3 Hardware Context
-
-* **Architecture:** Single-core 32-bit RISC-V microcontroller
-* **Clock Speed:** 160 MHz
-* **Internal RAM:** 400 KB of SRAM
-* **Target Production Device:** Dual-core ESP32-S3
-
-*Note: The ESP32-C3 was used for this prototype because it was the available hardware. The final production implementation is intended for the ESP32-S3.*
-
-### CPU Utilization — 160 MHz, Single-Core FreeRTOS
-
-* **Acquisition CPU:** 1.180%
-* **VAD/DSP CPU:** 0.157%
-* **Wi-Fi/Ping CPU:** 0.001%
-* **Monitor CPU (Telemetry Overhead):** 5.989%
-* **Total Measured CPU:** 7.326%
-* **Core Application CPU:** **~1.338%**
-
-*The monitor CPU represents the overhead introduced by serial logging and telemetry during testing. It is not part of the actual audio-processing or AI application workload.*
-
-### Internal RAM & Heap
-
-* **Total Internal Heap:** 319.91 KB *(ESP32-C3 specific)*
-* **Used Heap:** 81.01 KB
-* **Minimum Free Heap:** 204.91 KB
-* **Largest Free Block:** 107.99 KB
-
-### Network & Stability
-
-* **Continuous Processing:** 3,584 consecutive frames processed with zero drops
-* **Wi-Fi RTT:** 53–209 ms observed
-* **Wi-Fi RSSI:** −47 dBm observed
-
----
-
-## 5. Core Architectural Behaviors Validated
-
-1. **Persistent Audio Buffering:** Successfully maintained a **46.88 KB, 1.5-second ring buffer** for 16 kHz, 16-bit mono audio without observed memory leaks during extended runs.
-
-2. **Event-Driven Networking:** The Wi-Fi radio was activated only after a wake event, successfully performed the TCP connection/RTT test, and then disconnected to return the system toward a low-power state.
-
-3. **Stack Headroom:** Stack usage remained within safe limits during the highest observed load, with more than **1,500 words free** on the Acquisition task and more than **1,050 words free** on the DSP task. No task starvation or stack overflow was observed.
-
----
-## 6. Optimizaions
-### SOFTWARE-LEVEL OPTIMIZATION
-
-1. Compiler & Build Optimization
-
-* **Compiler Size Optimization:** Reduce code and runtime overhead using optimized compiler settings.
-* **Link-Time Optimization (LTO):** Remove unused code and optimize across compilation units.
-* **Linker Placement:** Place real-time acquisition/DMA code in IRAM and non-critical logic in Flash.
-* **ROM Functions:** Use ESP32 ROM implementations where possible to reduce firmware footprint.
-
-2. RTOS Optimization
-
-* **Task Consolidation:** Combine sequential operations to reduce task and context-switch overhead.
-* **Task Notifications:** Use lightweight synchronization instead of heavier RTOS primitives where suitable.
-* **Stack Profiling:** Measure stack high-water marks and reduce oversized task stacks.
-* **Flash Placement:** Keep non-time-critical FreeRTOS code in Flash to preserve internal RAM.
-
-3. DSP Optimization
-
-* **Fixed-Point DSP:** Replace floating-point operations where practical.
-* **ESP-DSP Kernels:** Use optimized FFT/filtering implementations.
-* **Efficient VAD Arithmetic:** Reduce computation in continuous speech detection.
-
-4. AI/KWS Optimization
-
-* **INT8 Quantization:** Reduce KWS computation and memory requirements.
-* **ESP-NN SIMD Kernels:** Use optimized neural-network operations.
-* **AOT Compilation:** Evaluate MicroTVM to remove runtime/interpreter overhead.
-
-5. Memory & Networking Optimization
-
-* **Phase-Based Buffer Reuse:** Reuse memory between DSP, KWS and streaming phases.
-* **Memory Segregation:** Keep latency-critical buffers in internal SRAM and move suitable large buffers to external memory.
-* **Dynamic TLS Buffers:** Allocate large network/TLS buffers only when streaming.
-* **PSRAM Offloading:** Move suitable Wi-Fi/lwIP and large audio/Opus buffers away from internal RAM.
-
-## 7. Current Limitations & Next Steps
-
-These results validate the baseline resource-gated architecture on the ESP32-C3. The following components still need to be integrated and benchmarked on the final production hardware:
-
-* **Hardware Integration:** Move from the single-core ESP32-C3 prototype to the target dual-core ESP32-S3 and replace the synthetic audio input with a physical I2S MEMS microphone.
-
-* **AI/ML Deployment:** Integrate the quantized INT8 KWS neural-network model and measure **False Activations per Hour (FAH)** and **False Rejection Rate (FRR)**.
-
-* **Audio Encoding:** Implement the Opus encoder and benchmark its memory usage and CPU overhead.
-
-* **Power & Latency Profiling:** Measure exact energy per inference/event *(mJ)* and end-to-end cloud ASR latency.
+**Project Status:** Experimental Prototype / Active Development
