@@ -82,8 +82,43 @@
 3. **Stack Headroom:** Stack usage remained within safe limits during the highest observed load, with more than **1,500 words free** on the Acquisition task and more than **1,050 words free** on the DSP task. No task starvation or stack overflow was observed.
 
 ---
+## 6. Optimizaions
+### SOFTWARE-LEVEL OPTIMIZATION
 
-## 6. Current Limitations & Next Steps
+1. Compiler & Build Optimization
+
+* **Compiler Size Optimization:** Reduce code and runtime overhead using optimized compiler settings.
+* **Link-Time Optimization (LTO):** Remove unused code and optimize across compilation units.
+* **Linker Placement:** Place real-time acquisition/DMA code in IRAM and non-critical logic in Flash.
+* **ROM Functions:** Use ESP32 ROM implementations where possible to reduce firmware footprint.
+
+2. RTOS Optimization
+
+* **Task Consolidation:** Combine sequential operations to reduce task and context-switch overhead.
+* **Task Notifications:** Use lightweight synchronization instead of heavier RTOS primitives where suitable.
+* **Stack Profiling:** Measure stack high-water marks and reduce oversized task stacks.
+* **Flash Placement:** Keep non-time-critical FreeRTOS code in Flash to preserve internal RAM.
+
+3. DSP Optimization
+
+* **Fixed-Point DSP:** Replace floating-point operations where practical.
+* **ESP-DSP Kernels:** Use optimized FFT/filtering implementations.
+* **Efficient VAD Arithmetic:** Reduce computation in continuous speech detection.
+
+4. AI/KWS Optimization
+
+* **INT8 Quantization:** Reduce KWS computation and memory requirements.
+* **ESP-NN SIMD Kernels:** Use optimized neural-network operations.
+* **AOT Compilation:** Evaluate MicroTVM to remove runtime/interpreter overhead.
+
+5. Memory & Networking Optimization
+
+* **Phase-Based Buffer Reuse:** Reuse memory between DSP, KWS and streaming phases.
+* **Memory Segregation:** Keep latency-critical buffers in internal SRAM and move suitable large buffers to external memory.
+* **Dynamic TLS Buffers:** Allocate large network/TLS buffers only when streaming.
+* **PSRAM Offloading:** Move suitable Wi-Fi/lwIP and large audio/Opus buffers away from internal RAM.
+
+## 7. Current Limitations & Next Steps
 
 These results validate the baseline resource-gated architecture on the ESP32-C3. The following components still need to be integrated and benchmarked on the final production hardware:
 
