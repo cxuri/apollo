@@ -6,7 +6,7 @@ The project explores low-overhead, always-on audio processing directly on a micr
 
 ## Demonstration
 
-[**Watch Demonstration Video**](./Demonstration.mp4)
+**[Watch Demonstration Video on YouTube](https://youtu.be/0ie85YYeCwQ)** *(or watch the local repository file: [./Demonstration.mp4](./Demonstration.mp4))*
 
 ## Features
 
